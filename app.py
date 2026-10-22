@@ -155,7 +155,17 @@ with st.sidebar:
     vuln_options = ["-- اختر من القائمة لتعبئة الاستعلام --"] + [
         f"{v['id']} - {v['name_ar']} ({v['name']})" for v in all_vulns
     ]
-    selected_from_menu = st.selectbox("المخاطر الموثقة:", vuln_options)
+    selected_from_menu = st.selectbox("المخاطر الموثقة:", vuln_options, key="sidebar_vuln_select")
+    if selected_from_menu != "-- اختر من القائمة لتعبئة الاستعلام --":
+        selected_id = selected_from_menu.split(" - ")[0]
+        # تتبع آخر قيمة طُبّقت من القائمة لتجنب الكتابة فوق نص المستخدم
+        last_applied = st.session_state.get("_sidebar_last_applied", "")
+        if last_applied != selected_id:
+            st.session_state["_sidebar_last_applied"] = selected_id
+            st.session_state["main_input"] = selected_id
+            st.rerun()
+    else:
+        st.session_state["_sidebar_last_applied"] = ""
     
     st.markdown("---")
     st.markdown("### 🔍 معايير التحقق (RAG Triad):")
@@ -171,45 +181,39 @@ with col_head:
     st.markdown("<div class='rtl-text main-title'>🛡️ نظام RAG لتحليل مخاطر تطبيقات الذكاء الاصطناعي</div>", unsafe_allow_html=True)
     st.markdown("<div class='rtl-text sub-title'>استرجاع موثق ومدقق من وثيقة <b>OWASP Top 10 for LLM Applications 2025</b> مع ذكر أرقام الصفحات والتحقق الصارم من عدم الاختلاق.</div>", unsafe_allow_html=True)
 
-# Pre-fill query if selected from dropdown
-default_query = ""
-if selected_from_menu != "-- اختر من القائمة لتعبئة الاستعلام --":
-    default_query = selected_from_menu.split(" - ")[0]
-
-# Quick scenario buttons
+# ── Quick Scenario Buttons ──────────────────────────────────────────────────
 st.markdown("<div class='rtl-text' style='font-weight: 700; margin-bottom: 0.4rem;'>💡 أمثلة وسيناريوهات جاهزة للاختبار السريع:</div>", unsafe_allow_html=True)
 c1, c2, c3, c4 = st.columns(4)
-query_to_set = None
-
-if c1.button("🎯 حقن التوجيهات (Prompt Injection)"):
-    query_to_set = "Prompt Injection"
-if c2.button("📄 نص أبيض مخفي بسيرة ذاتية (RAG)"):
-    query_to_set = "أحد المتقدمين وضع نص أبيض غير مرئي داخل سيرته الذاتية لاختراق نظام RAG"
-if c3.button("✈️ قضية شات بوت طيران كندا"):
-    query_to_set = "شات بوت طيران كندا والهلوسة في أسعار التذاكر ودعوى التعويض"
-if c4.button("💸 استنزاف التكلفة Denial of Wallet"):
-    query_to_set = "Denial of Wallet واستنزاف الميزانية السحابية بالاستعلامات الضخمة"
+if c1.button("🎯 حقن التوجيهات (Prompt Injection)", use_container_width=True):
+    st.session_state["main_input"] = "Prompt Injection"
+    st.rerun()
+if c2.button("📄 نص أبيض مخفي بسيرة ذاتية (RAG)", use_container_width=True):
+    st.session_state["main_input"] = "أحد المتقدمين وضع نص أبيض غير مرئي داخل سيرته الذاتية لاختراق نظام RAG"
+    st.rerun()
+if c3.button("✈️ قضية شات بوت طيران كندا", use_container_width=True):
+    st.session_state["main_input"] = "شات بوت طيران كندا والهلوسة في أسعار التذاكر ودعوى التعويض"
+    st.rerun()
+if c4.button("💸 استنزاف التكلفة Denial of Wallet", use_container_width=True):
+    st.session_state["main_input"] = "Denial of Wallet واستنزاف الميزانية السحابية بالاستعلامات الضخمة"
+    st.rerun()
 
 c5, c6, c7, c8 = st.columns(4)
-if c5.button("🔑 تسريب مفاتيح موجه النظام"):
-    query_to_set = "تسريب مفاتيح API وموجه النظام System Prompt Leakage"
-if c6.button("📦 محول LoRA خبيث في سلاسل الإمداد"):
-    query_to_set = "استخدام محول LoRA خبيث من Hugging Face لاختراق سلاسل الإمداد"
-if c7.button("🤖 مساعد بريدي بصلاحيات واسعة"):
-    query_to_set = "وكيل ذكي بصلاحيات واسعة يقرأ ويرسل إيميلات دون موافقة بشرية"
-if c8.button("💉 تسميم البيانات وعميل نائم"):
-    query_to_set = "تسميم بيانات التدريب وزرع عميل نائم Sleeper Agent"
+if c5.button("🔑 تسريب مفاتيح موجه النظام", use_container_width=True):
+    st.session_state["main_input"] = "تسريب مفاتيح API وموجه النظام System Prompt Leakage"
+    st.rerun()
+if c6.button("📦 محول LoRA خبيث في سلاسل الإمداد", use_container_width=True):
+    st.session_state["main_input"] = "استخدام محول LoRA خبيث من Hugging Face لاختراق سلاسل الإمداد"
+    st.rerun()
+if c7.button("🤖 مساعد بريدي بصلاحيات واسعة", use_container_width=True):
+    st.session_state["main_input"] = "وكيل ذكي بصلاحيات واسعة يقرأ ويرسل إيميلات دون موافقة بشرية"
+    st.rerun()
+if c8.button("💉 تسميم البيانات وعميل نائم", use_container_width=True):
+    st.session_state["main_input"] = "تسميم بيانات التدريب وزرع عميل نائم Sleeper Agent"
+    st.rerun()
 
-if query_to_set:
-    st.session_state["search_query"] = query_to_set
-    active_query = query_to_set
-else:
-    active_query = st.session_state.get("search_query", default_query)
-
-# Main Query Input Box
+# ── Main Query Input ─────────────────────────────────────────────────────────
 query_input = st.text_input(
     "أدخل اسم الخطر أو وصف حالة / سيناريو هجوم في تطبيقات الذكاء الاصطناعي:",
-    value=active_query,
     placeholder="اكتب اسم الخطر بالعربي أو الإنجليزي (مثل: Prompt Injection، تسريب البرومبت) أو صف سيناريو...",
     key="main_input"
 )
@@ -218,9 +222,23 @@ query_input = st.text_input(
 if query_input.strip():
     with st.spinner("جاري استرجاع البيانات والتحقق من صحتها من ملف OWASP 2025..."):
         result = generator.process_query(query_input.strip())
-        c_info = result["classification"]
-        v_info = result["verification"]
-        rag_metrics = v_info["rag_triad"]
+
+    # ── لم يتم التعرف على الاستعلام ─────────────────────────────────
+    if result.get("no_match"):
+        st.markdown("---")
+        st.warning(
+            "⚠️ **لم يتم التعرف على هذا الاستعلام ضمن مخاطر OWASP Top 10 for LLM Applications 2025.**\n\n"
+            "💡 **جرّب:**\n"
+            "- اكتب اسم الخطر مباشرة مثل: `Prompt Injection`، `Hallucination`، `Supply Chain`\n"
+            "- أو اكتبه بالعربي مثل: `هلوسة`، `تسريب البيانات`، `تسميم البيانات`\n"
+            "- أو اضغط على أحد أزرار الأمثلة السريعة أعلاه\n"
+            "- أو اختر خطراً مباشرة من قائمة **تصفح المخاطر العشرة** في الشريط الجانبي"
+        )
+        st.stop()
+
+    c_info = result["classification"]
+    v_info = result["verification"]
+    rag_metrics = v_info["rag_triad"]
 
     st.markdown("---")
 

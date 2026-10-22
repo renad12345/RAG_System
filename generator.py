@@ -21,9 +21,15 @@ class OWASPResponseGenerator:
         """
         retrieved_results = self.rag_engine.retrieve(query, top_k=3)
         top_item, match_score = retrieved_results[0]
+
+        # No relevant match found → return a sentinel response
+        if top_item is None:
+            return {"no_match": True, "query": query}
+
         secondary_matches = [
             {"id": item["id"], "name": item["name"], "name_ar": item["name_ar"], "score": score}
             for item, score in retrieved_results[1:]
+            if item is not None
         ]
 
         # Extract raw page contents for citations

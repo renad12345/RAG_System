@@ -72,9 +72,10 @@ class OWASPRagEngine:
         query_lower = query_clean.lower()
 
         # Check for direct ID match (e.g. 'LLM01', 'LLM05', 'LLM10:2025', '1')
-        for code, item in self.code_lookup.items():
+        # Sort codes by length descending so longer/more specific matches win first
+        for code in sorted(self.code_lookup.keys(), key=len, reverse=True):
             if code in query_lower:
-                return [(item, 1.0)]
+                return [(self.code_lookup[code], 1.0)]
 
         # Arabic and English synonym boosting dictionary
         boost_map = {
@@ -151,10 +152,22 @@ class OWASPRagEngine:
         # Tokenize query
         tokenized_query = self._tokenize(query_clean)
         if not tokenized_query:
-            return [(self.top10_data[0], 0.0)]
+            return [(None, 0.0)]
 
-        # BM25 scores
+        # BM25 scores (raw — before boosts)
         scores = self.bm25.get_scores(tokenized_query)
+        raw_max_score = max(scores)
+
+        # Check if any keyword boost applies
+        boost_hit = any(kw in query_lower for kw in boost_map)
+
+        # If BM25 found nothing AND no boost keyword matched → unrecognized query
+        # Also reject if all query tokens are very short (< 3 chars) — likely random/gibberish
+        meaningful_tokens = [t for t in tokenized_query if len(t) >= 3]
+        if raw_max_score < 0.45 and not boost_hit:
+            return [(None, 0.0)]
+        if raw_max_score < 0.5 and not boost_hit and len(meaningful_tokens) == 0:
+            return [(None, 0.0)]
 
         # Apply keyword boosts
         adjusted_scores = list(scores)
